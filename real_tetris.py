@@ -102,13 +102,39 @@ class Jektris:
             elif event.key == pygame.K_RIGHT and self.shape_x + len(self.shape[0]) < GRID_WIDTH:
                 self.shape_x += 1
             elif event.key == pygame.K_DOWN:
-                self.fall_delay = 200
+                self.fall_delay = 150
         if event.type == pygame.KEYUP:
             if event.key == pygame.K_DOWN:
                 self.fall_delay = 1000
         if event.type == pygame.QUIT:
             self.running = False
             menu.state = "menu"
+
+    def collide_shape(self):
+        h_shape = len(self.shape)
+        stop_flag = False
+        if self.shape_y == GRID_HEIGHT - h_shape:
+            for y in range(len(self.shape)):
+                for x in range(len(self.shape[y])):
+                    if self.shape[y][x] > 0:
+                        self.current_grid[self.shape_y + y][self.shape_x + x] = self.shape[y][x]
+            self.shape = self.get_shape()
+            self.shape_x = GRID_WIDTH // 2 - len(self.shape[0]) // 2
+            self.shape_y = 0
+            return
+        #for y in range(len(self.shape)):
+            #for x in range(len(self.shape[y])):
+                #if h_shape == 2:
+                    #if self.shape[h_shape - 1][x] > 0:
+        if stop_flag:
+            for y in range(len(self.shape)):
+                for x in range(len(self.shape[y])):
+                    if self.shape[y][x] > 0:
+                        self.current_grid[self.shape_y + y][self.shape_x + x] = self.shape[y][x]
+            self.shape = self.get_shape()
+            self.shape_x = GRID_WIDTH // 2 - len(self.shape[0]) // 2
+            self.shape_y = 0
+            return
 
     def draw_grid(self):
         for y in range(GRID_HEIGHT):
@@ -143,7 +169,7 @@ class Jektris:
                     pygame.draw.rect(screen, ORANGE,
                                      pygame.Rect(x * self.cell_size + 2, y * self.cell_size + 2, self.cell_size - 2,
                                                  self.cell_size - 2))
-        self.grid = [[0 for _ in range(GRID_WIDTH)] for _ in range(GRID_HEIGHT)]
+        self.grid = [[self.current_grid[y][x] for x in range(GRID_WIDTH)] for y in range(GRID_HEIGHT)]
 
     def get_shape(self):
         key_shape = ["I", "O", "J", "T", "S", "Z", "L"]
@@ -161,7 +187,8 @@ class Jektris:
     def draw_shape(self, shape):
         for y in range(len(shape)):
             for x in range(len(shape[y])):
-                self.grid[y + self.shape_y][x + self.shape_x] = shape[y][x]
+                if shape[y][x] > 0:
+                    self.grid[y + self.shape_y][x + self.shape_x] = shape[y][x]
 
     def draw(self):
         screen.fill(BLACK)
@@ -176,6 +203,7 @@ class Jektris:
                 self.last_fall = pygame.time.get_ticks()
                 self.shape_y += 1
             self.draw()
+            self.collide_shape()
             pygame.display.flip()
 
 
