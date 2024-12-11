@@ -94,15 +94,51 @@ class Jektris:
         self.fall_delay = 1000
         self.current_grid = [[0 for _ in range(GRID_WIDTH)] for _ in range(GRID_HEIGHT)]
 
+    def get_shape_width(self, shape):
+        len_lines = []
+        for line in shape:
+            len_lines.append(len(line))
+        return max(len_lines)
+    def check_lines(self):
+        lines_to_remove = []
+        for y in self.current_grid:
+            count = 0
+            for x in y:
+                if x > 0:
+                    count += 1
+
+
+
+    def rotate_shape(self):
+        new_shape = list(zip(*self.shape[::-1]))
+        if self.shape_x + self.get_shape_width(new_shape) < GRID_WIDTH and self.shape_y + len(new_shape) < GRID_HEIGHT:
+            for y in range(len(new_shape)):
+                for x in range(len(new_shape[y])):
+                    if new_shape[y][x] > 0:
+                        if self.current_grid[self.shape_y + y][self.shape_x + x] > 0:
+                            return
+            self.shape = new_shape
+    def check_move(self, offset):
+        if self.shape_x + offset < 0:
+            return False
+        elif self.shape_x + offset + self.get_shape_width(self.shape) > GRID_WIDTH:
+            return False
+        for y in range(len(self.shape)):
+            for x in range(len(self.shape[y])):
+                if self.shape[y][x] > 0:
+                    if self.current_grid[self.shape_y + y][self.shape_x + x + offset] > 0:
+                        return False
+        return True
     def handle_event(self, event):
         if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_LEFT and self.shape_x > 0:
-
+            if event.key == pygame.K_LEFT and self.check_move(-1):
                 self.shape_x -= 1
-            elif event.key == pygame.K_RIGHT and self.shape_x + len(self.shape[0]) < GRID_WIDTH:
+            elif event.key == pygame.K_RIGHT and self.check_move(1):
                 self.shape_x += 1
             elif event.key == pygame.K_DOWN:
                 self.fall_delay = 150
+            elif event.key == pygame.K_UP:
+                self.rotate_shape()
         if event.type == pygame.KEYUP:
             if event.key == pygame.K_DOWN:
                 self.fall_delay = 1000
@@ -113,7 +149,15 @@ class Jektris:
     def collide_shape(self):
         h_shape = len(self.shape)
         stop_flag = False
-        if self.shape_y == GRID_HEIGHT - h_shape:
+
+        for y in range(len(self.shape)):
+            for x in range(len(self.shape[y])):
+                if self.shape[y][x] > 0:
+                    if self.shape_y + y + 1 < GRID_HEIGHT:
+                        if self.current_grid[self.shape_y + y + 1][self.shape_x + x] > 0:
+                            stop_flag = True
+                            break
+        if self.shape_y == GRID_HEIGHT - h_shape or stop_flag:
             for y in range(len(self.shape)):
                 for x in range(len(self.shape[y])):
                     if self.shape[y][x] > 0:
@@ -121,20 +165,8 @@ class Jektris:
             self.shape = self.get_shape()
             self.shape_x = GRID_WIDTH // 2 - len(self.shape[0]) // 2
             self.shape_y = 0
-            return
-        #for y in range(len(self.shape)):
-            #for x in range(len(self.shape[y])):
-                #if h_shape == 2:
-                    #if self.shape[h_shape - 1][x] > 0:
-        if stop_flag:
-            for y in range(len(self.shape)):
-                for x in range(len(self.shape[y])):
-                    if self.shape[y][x] > 0:
-                        self.current_grid[self.shape_y + y][self.shape_x + x] = self.shape[y][x]
-            self.shape = self.get_shape()
-            self.shape_x = GRID_WIDTH // 2 - len(self.shape[0]) // 2
-            self.shape_y = 0
-            return
+
+
 
     def draw_grid(self):
         for y in range(GRID_HEIGHT):
@@ -197,6 +229,7 @@ class Jektris:
 
     def run(self):
         while self.running:
+            clock.tick(FPS)
             for event in pygame.event.get():
                 self.handle_event(event)
             if pygame.time.get_ticks() - self.last_fall > self.fall_delay:
