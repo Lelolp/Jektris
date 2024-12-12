@@ -93,6 +93,7 @@ class Jektris:
         self.last_fall = pygame.time.get_ticks()
         self.fall_delay = 1000
         self.current_grid = [[0 for _ in range(GRID_WIDTH)] for _ in range(GRID_HEIGHT)]
+        self.score = 0
 
     def get_shape_width(self, shape):
         len_lines = []
@@ -101,11 +102,26 @@ class Jektris:
         return max(len_lines)
     def check_lines(self):
         lines_to_remove = []
-        for y in self.current_grid:
+        for y in range(GRID_HEIGHT):
             count = 0
-            for x in y:
+            for x in self.current_grid[y]:
                 if x > 0:
                     count += 1
+            if count == GRID_WIDTH:
+                lines_to_remove.append(y)
+        if len(lines_to_remove) == 4:
+            self.score += 80
+        else:
+            self.score += len(lines_to_remove) * 10
+        print(self.score)
+        for line in lines_to_remove:
+            del self.current_grid[line]
+            self.current_grid.insert(0, [0 for _ in range(GRID_WIDTH)])
+
+    def draw_info(self):
+        font = pygame.font.Font(None, 64)
+        title = font.render(f"{self.score}", True, WHITE)
+        screen.blit(title, (WIDTH - title.get_width() - 30, 50))
 
 
 
@@ -226,6 +242,7 @@ class Jektris:
         screen.fill(BLACK)
         self.draw_shape(self.shape)
         self.draw_grid()
+        self.draw_info()
 
     def run(self):
         while self.running:
@@ -237,6 +254,7 @@ class Jektris:
                 self.shape_y += 1
             self.draw()
             self.collide_shape()
+            self.check_lines()
             pygame.display.flip()
 
 
