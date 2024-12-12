@@ -120,8 +120,11 @@ class Jektris:
 
     def draw_info(self):
         font = pygame.font.Font(None, 64)
+        title = font.render("score", True, WHITE)
+        screen.blit(title, (WIDTH - title.get_width() - 20, 1))
+        font = pygame.font.Font(None, 64)
         title = font.render(f"{self.score}", True, WHITE)
-        screen.blit(title, (WIDTH - title.get_width() - 30, 50))
+        screen.blit(title, (WIDTH - title.get_width() - 65, 50))
 
 
 
