@@ -94,6 +94,7 @@ class Jektris:
         self.fall_delay = 1000
         self.current_grid = [[0 for _ in range(GRID_WIDTH)] for _ in range(GRID_HEIGHT)]
         self.score = 0
+        self.next_shape = self.get_shape()
 
     def get_shape_width(self, shape):
         len_lines = []
@@ -113,18 +114,25 @@ class Jektris:
             self.score += 80
         else:
             self.score += len(lines_to_remove) * 10
-        print(self.score)
         for line in lines_to_remove:
             del self.current_grid[line]
             self.current_grid.insert(0, [0 for _ in range(GRID_WIDTH)])
 
     def draw_info(self):
-        font = pygame.font.Font(None, 64)
+        font = pygame.font.Font(None, 40)
         title = font.render("score", True, WHITE)
-        screen.blit(title, (WIDTH - title.get_width() - 20, 1))
-        font = pygame.font.Font(None, 64)
+        screen.blit(title, (WIDTH - title.get_width() - 37, 1))
         title = font.render(f"{self.score}", True, WHITE)
-        screen.blit(title, (WIDTH - title.get_width() - 65, 50))
+        screen.blit(title, (WIDTH - title.get_width() - 65, 40))
+        font = pygame.font.Font(None, 32)
+        title = font.render("next shape", True, WHITE)
+        screen.blit(title, (WIDTH - title.get_width() - 20, HEIGHT - 100))
+        for y in range(len(self.next_shape)):
+            for x in range(len(self.next_shape[y])):
+                if self.next_shape[y][x] > 0:
+                    pygame.draw.rect(screen, GRAY,
+                                     pygame.Rect(x * self.cell_size + WIDTH - 120, y * self.cell_size + HEIGHT - 70, self.cell_size,
+                                                 self.cell_size))
 
 
 
@@ -181,7 +189,8 @@ class Jektris:
                 for x in range(len(self.shape[y])):
                     if self.shape[y][x] > 0:
                         self.current_grid[self.shape_y + y][self.shape_x + x] = self.shape[y][x]
-            self.shape = self.get_shape()
+            self.shape = self.next_shape
+            self.next_shape = self.get_shape()
             self.shape_x = GRID_WIDTH // 2 - len(self.shape[0]) // 2
             self.shape_y = 0
 
@@ -250,13 +259,13 @@ class Jektris:
     def run(self):
         while self.running:
             clock.tick(FPS)
-            for event in pygame.event.get():
-                self.handle_event(event)
+            self.collide_shape()
             if pygame.time.get_ticks() - self.last_fall > self.fall_delay:
                 self.last_fall = pygame.time.get_ticks()
                 self.shape_y += 1
+            for event in pygame.event.get():
+                self.handle_event(event)
             self.draw()
-            self.collide_shape()
             self.check_lines()
             pygame.display.flip()
 
