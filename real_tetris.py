@@ -21,9 +21,9 @@ clock = pygame.time.Clock()
 #pygame.display.set_icon() for later
 
 src_dir = path.join(path.dirname(__file__), 'src')
-ui_radius_img = pygame.image.load(path.join(src_dir, 'ui_radius.png')).convert()
-
-ui_group = pygame.sprite.Group()
+pygame.mixer.music.load(path.join(src_dir, 'Tetris.mp3'))
+pygame.mixer.music.set_volume(0.1)
+pygame.mixer.music.play(-1)
 
 
 class Button:
@@ -51,7 +51,8 @@ class Menu:
     def __init__(self):
         self.buttons = [
             Button(WIDTH / 2 - 100, 200, 200, 50, "Play", (0, 255, 0), (0, 200, 0)),
-            Button(WIDTH / 2 - 100, 300, 200, 50, "Options", (0, 0, 255), (0, 0, 200)),
+            Button(WIDTH / 2 + 75, 300, 25, 25, "+", (0, 0, 255), (0, 0, 200)),
+            Button(WIDTH / 2 + 75, 325, 25, 25, "-", (0, 0, 255), (0, 0, 200)),
             Button(WIDTH / 2 - 100, 400, 200, 50, "Quit", (255, 0, 0), (150, 0, 0))
         ]
         self.state = "menu"
@@ -64,6 +65,14 @@ class Menu:
         font = pygame.font.Font(None, 64)
         title = font.render("Jektris", True, WHITE)
         screen.blit(title, (WIDTH // 2 - title.get_width() // 2, 100))
+        font = pygame.font.Font(None, 46)
+        title = font.render(f"{int(round(pygame.mixer.music.get_volume(), 1) * 100)}%", True, WHITE)
+        screen.blit(title, (WIDTH / 2 - 10, 312))
+        font = pygame.font.Font(None, 32)
+        title = font.render("Music", True, WHITE)
+        screen.blit(title, (WIDTH / 2 - 100, 305))
+        title = font.render("volume", True, WHITE)
+        screen.blit(title, (WIDTH / 2 - 100, 330))
 
     def handle_events(self, event):
         if event.type == pygame.MOUSEMOTION:
@@ -75,11 +84,13 @@ class Menu:
                     if button.text == "Play":
                         self.state = "game"
                         print("game selected")
-                    elif button.text == "Options":
-                        print("Options selected")
                     elif button.text == "Quit":
                         pygame.quit()
                         sys.exit()
+                    elif button.text == "+" and int(round(pygame.mixer.music.get_volume(), 1) * 100) < 100:
+                        pygame.mixer.music.set_volume(round(pygame.mixer.music.get_volume(), 1) + 0.1)
+                    elif button.text == "-" and int(round(pygame.mixer.music.get_volume(), 1) * 100) > 0:
+                        pygame.mixer.music.set_volume(round(pygame.mixer.music.get_volume(), 1) - 0.1)
 
 
 class Jektris:
@@ -95,6 +106,9 @@ class Jektris:
         self.current_grid = [[0 for _ in range(GRID_WIDTH)] for _ in range(GRID_HEIGHT)]
         self.score = 0
         self.next_shape = self.get_shape()
+        self.state = "game"
+        self.reset_button = Button(WIDTH - 180, HEIGHT - 70, 150, 50, "Reset", GREEN, (0, 100, 0))
+        self.menu_button = Button(30, HEIGHT - 70, 150, 50, "Back to menu", RED, (100, 0, 0))
 
     def get_shape_width(self, shape):
         len_lines = []
@@ -191,10 +205,16 @@ class Jektris:
                         self.current_grid[self.shape_y + y][self.shape_x + x] = self.shape[y][x]
             self.shape = self.next_shape
             self.next_shape = self.get_shape()
-            self.shape_x = GRID_WIDTH // 2 - len(self.shape[0]) // 2
+            self.shape_x = GRID_WIDTH // 2 - self.get_shape_width(self.shape) // 2
             self.shape_y = 0
+            self.chek_end_game()
 
-
+    def chek_end_game(self):
+        for y in range(len(self.shape)):
+            for x in range(len(self.shape[y])):
+                if self.shape[y][x] > 0:
+                    if self.current_grid[self.shape_y + y][self.shape_x + x] > 0:
+                        self.state = "game_over"
 
     def draw_grid(self):
         for y in range(GRID_HEIGHT):
@@ -259,14 +279,45 @@ class Jektris:
     def run(self):
         while self.running:
             clock.tick(FPS)
-            self.collide_shape()
-            if pygame.time.get_ticks() - self.last_fall > self.fall_delay:
-                self.last_fall = pygame.time.get_ticks()
-                self.shape_y += 1
-            for event in pygame.event.get():
-                self.handle_event(event)
-            self.draw()
-            self.check_lines()
+            if self.state == "game":
+                self.collide_shape()
+                if pygame.time.get_ticks() - self.last_fall > self.fall_delay:
+                    self.last_fall = pygame.time.get_ticks()
+                    self.shape_y += 1
+                for event in pygame.event.get():
+                    self.handle_event(event)
+                self.draw()
+                self.check_lines()
+            elif self.state == "game_over":
+                for event in pygame.event.get():
+                    if event.type == pygame.MOUSEMOTION:
+                        self.reset_button.active = self.reset_button.check_click(event.pos)
+                        self.menu_button.active = self.menu_button.check_click(event.pos)
+                    elif event.type == pygame.MOUSEBUTTONDOWN:
+                        if self.reset_button.active:
+                            self.running = False
+                        elif self.menu_button.active:
+                            self.running = False
+                            menu.state = "menu"
+
+                    elif event.type == pygame.QUIT:
+                        self.running = False
+                        menu.state = "menu"
+                screen.fill(BLACK)
+                font = pygame.font.Font(None, 80)
+                title = font.render("GAME OVER", True, WHITE)
+                screen.blit(title, (WIDTH / 2 - title.get_width() / 2, 20))
+
+                font = pygame.font.Font(None, 64)
+                title = font.render("score", True, WHITE)
+                screen.blit(title, (WIDTH / 2 - title.get_width() / 2, 80))
+                title = font.render(f"{self.score}", True, WHITE)
+                screen.blit(title, (WIDTH / 2 - title.get_width() / 2, 130))
+
+                self.reset_button.draw(screen)
+                self.menu_button.draw(screen)
+
+
             pygame.display.flip()
 
 
